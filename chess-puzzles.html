@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Chess Puzzle Trainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1815;
+    --surface2: #242118;
+    --border: #3a3628;
+    --gold: #c9a84c;
+    --gold-dim: #8a6f2e;
+    --cream: #e8dfc8;
+    --cream-dim: #9a9080;
+    --light-sq: #f0d9b5;
+    --dark-sq: #b58863;
+    --light-sq-hl: #cdd16f;
+    --dark-sq-hl: #aaa23a;
+    --selected: #20a020;
+    --hint: #e05050;
+    --correct: #22c55e;
+    --wrong: #ef4444;
+    --text: #e8dfc8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+  }
+  .logo span { color: var(--cream-dim); font-size: 0.85rem; margin-left: 10px; }
+
+  /* ── Main layout ── */
+  .app {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 24px 16px;
+    align-items: start;
+  }
+
+  /* ── Left panel ── */
+  .left-panel { padding-right: 24px; }
+  .right-panel { padding-left: 24px; }
+
+  .panel-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .editor-toggle {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.15s;
+    margin-bottom: 14px;
+  }
+  .editor-toggle:hover { border-color: var(--gold-dim); }
+  .editor-toggle.open { border-color: var(--gold); background: #2e2a1e; margin-bottom: 14px; }
+  #editorCaret { font-size: 1rem; color: var(--cream-dim); transition: transform 0.2s; }
+  .editor-toggle.open #editorCaret { color: var(--gold); }
+
+  /* ── Puzzle list ── */
+  .puzzle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 520px;
+    overflow-y: auto;
+  }
+  .puzzle-list::-webkit-scrollbar { width: 4px; }
+  .puzzle-list::-webkit-scrollbar-track { background: var(--surface); }
+  .puzzle-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .puzzle-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .puzzle-item:hover { border-color: var(--gold-dim); background: #2a2720; }
+  .puzzle-item.active { border-color: var(--gold); background: #2e2a1e; }
+  .puzzle-item.bulk-selected { border-color: var(--wrong); background: #2a1010; }
+  .puzzle-item .pi-name { font-size: 0.82rem; color: var(--cream); }
+  .puzzle-item .pi-side { font-size: 0.72rem; color: var(--cream-dim); margin-top: 2px; }
+  .puzzle-item .pi-status { font-size: 1rem; }
+
+  .add-btn {
+    margin-top: 10px;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    color: var(--cream-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .add-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  /* ── Board center ── */
+  .board-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .board-container {
+    position: relative;
+    user-select: none;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    border: 2px solid var(--gold-dim);
+    border-radius: 2px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6);
+  }
+
+  .sq {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: filter 0.1s;
+  }
+  .piece-token {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 62px;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    width: 100%;
+    height: 100%;
+    margin-top: -6px;
+  }
+  /* White pieces: white fill, black outline via paint-order SVG trick */
+  .piece-w {
+    color: #ffffff;
+    -webkit-text-stroke: 1.8px #1a1a1a;
+    paint-order: stroke fill;
+  }
+  /* Black pieces: solid black, no outline needed */
+  .piece-b {
+    color: #1a1a1a;
+    -webkit-text-stroke: 0;
+  }
+  .sq.light { background: var(--light-sq); }
+  .sq.dark  { background: var(--dark-sq); }
+  .sq.selected { background: var(--selected) !important; }
+  .sq.hint-sq { background: var(--hint) !important; }
+  .sq.last-move { filter: brightness(1.15); }
+  .sq:hover:not(.empty-mode-hover) { filter: brightness(1.08); }
+
+  /* dot for legal move indicator */
+  .sq .dot {
+    position: absolute;
+    width: 28%;
+    height: 28%;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.2);
+    pointer-events: none;
+  }
+  .sq.can-move .dot { display: block; }
+
+  /* coord labels */
+  .coord-file, .coord-rank {
+    position: absolute;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    pointer-events: none;
+  }
+  .coord-file { bottom: 2px; right: 3px; }
+  .coord-rank { top: 2px; left: 3px; }
+  .sq.light .coord-file, .sq.light .coord-rank { color: var(--dark-sq); }
+  .sq.dark  .coord-file, .sq.dark  .coord-rank  { color: var(--light-sq); }
+
+  /* ── Mode bar ── */
+  .mode-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .mode-btn {
+    padding: 7px 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--cream-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mode-btn:hover { border-color: var(--gold-dim); color: var(--cream); }
+  .mode-btn.active { border-color: var(--gold); color: var(--gold); background: #2e2a1e; }
+
+  /* ── Status banner ── */
+  .status-banner {
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    color: var(--cream-dim);
+    text-align: center;
+    padding: 0 8px;
+  }
+  .status-banner.correct { color: var(--correct); }
+  .status-banner.wrong   { color: var(--wrong); }
+  .status-banner.info    { color: var(--gold); }
+
+  /* ── Right panel ── */
+  .right-panel {}
+
+  /* Puzzle editor form */
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--cream-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 10px;
+    color: var(--cream);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus { border-color: var(--gold-dim); }
+  .form-input::placeholder { color: var(--cream-dim); opacity: 0.5; }
+
+  .piece-palette {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .piece-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 6px;
+    font-size: 26px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .piece-btn:hover { border-color: var(--gold-dim); }
+  .piece-btn.selected-piece { border-color: var(--gold); background: #2e2a1e; }
+  .piece-btn.eraser { font-size: 14px; color: var(--cream-dim); }
+  .piece-btn .piece-token { font-size: 26px; margin-top: 0; width: auto; height: auto; }
+  .side-btn .piece-token { font-size: 20px; margin-top: 0; width: auto; height: auto; vertical-align: middle; }
+
+  .solution-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+  .solution-move {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 0.78rem;
+  }
+  .solution-move .mv-num { color: var(--cream-dim); min-width: 20px; }
+  .solution-move .mv-text { color: var(--cream); flex: 1; }
+  .solution-move .mv-del {
+    color: var(--cream-dim);
+    cursor: pointer;
+    padding: 0 4px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .solution-move .mv-del:hover { color: var(--wrong); }
+  .solution-move.done { border-color: var(--correct); }
+  .solution-move.pending { border-color: var(--border); }
+  .solution-move.active-step { border-color: var(--gold); }
+
+  .btn {
+    padding: 9px 18px;
+    border-radius: 3px;
+    border: 1px solid;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+  .btn-gold {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #1a1200;
+    font-weight: 600;
+  }
+  .btn-gold:hover { background: #e0b85a; }
+  .btn-outline {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--cream-dim);
+  }
+  .btn-outline:hover { border-color: var(--gold-dim); color: var(--cream); }
+  .btn-danger {
+    background: transparent;
+    border-color: #5a2020;
+    color: #c06060;
+  }
+  .btn-danger:hover { border-color: var(--wrong); color: var(--wrong); }
+
+  .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .side-selector {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .side-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--cream-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .side-btn.active { border-color: var(--gold); color: var(--gold); background: #2e2a1e; }
+
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+  }
+
+  /* ── Solve controls ── */
+  .solve-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ── Move feedback: glow the moved squares ── */
+  @keyframes sq-correct {
+    0%   { box-shadow: inset 0 0 0 0 rgba(100,220,100,0); }
+    30%  { box-shadow: inset 0 0 0 6px rgba(100,220,100,0.75); }
+    100% { box-shadow: inset 0 0 0 0 rgba(100,220,100,0); }
+  }
+  @keyframes sq-wrong {
+    0%,100% { box-shadow: inset 0 0 0 4px rgba(220,60,60,0.0); transform: translateX(0); }
+    20%     { box-shadow: inset 0 0 0 4px rgba(220,60,60,0.8); transform: translateX(-5px); }
+    50%     { box-shadow: inset 0 0 0 4px rgba(220,60,60,0.8); transform: translateX(5px); }
+    80%     { transform: translateX(-3px); }
+  }
+  .sq-glow-correct { animation: sq-correct 0.6s ease forwards; }
+  .sq-shake-wrong  { animation: sq-wrong 0.35s ease forwards; }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    .left-panel  { padding-right: 0; padding-bottom: 20px; order: 2; }
+    .board-wrap  { order: 1; }
+    .right-panel { padding-left: 0; padding-top: 20px; order: 3; }
+    .sq { width: 44px; height: 44px; }
+    .piece-token { font-size: 40px; }
+    .puzzle-list { max-height: 180px; flex-direction: row; flex-wrap: wrap; }
+    .puzzle-item { min-width: 140px; }
+  }
+
+  @media (max-width: 420px) {
+    .sq { width: 40px; height: 40px; }
+    .piece-token { font-size: 36px; }
+  }
+
+  .empty-notice {
+    color: var(--cream-dim);
+    font-size: 0.78rem;
+    text-align: center;
+    padding: 20px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+  }
+
+  /* ── Import modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: min(680px, 95vw);
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    font-size: 1rem;
+  }
+  .modal-close {
+    background: none; border: none; color: var(--cream-dim);
+    font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
+  }
+  .modal-close:hover { color: var(--cream); }
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 5px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 16px;
+    color: var(--cream-dim);
+    font-size: 0.82rem;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--gold-dim);
+    background: #2a2518;
+    color: var(--cream);
+  }
+  .drop-zone .drop-icon { font-size: 2rem; margin-bottom: 8px; }
+
+  .import-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 0.75rem;
+    color: var(--cream-dim);
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-bottom: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .import-results {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    margin-top: 12px;
+  }
+  .import-result-item {
+    padding: 8px 12px;
+    border-radius: 3px;
+    border: 1px solid;
+    font-size: 0.78rem;
+  }
+  .import-result-item.ok   { border-color: #1a4a2a; color: var(--correct); background: #0f2a18; }
+  .import-result-item.err  { border-color: #4a1a1a; color: var(--wrong);   background: #2a0f0f; }
+  .import-result-item.warn { border-color: #4a3a0a; color: var(--gold);    background: #2a2008; }
+
+  .format-hint {
+    font-size: 0.72rem;
+    color: var(--cream-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+    line-height: 1.7;
+  }
+  .format-hint code {
+    color: var(--gold);
+    background: rgba(201,168,76,0.1);
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .import-btn-header {
+    padding: 7px 14px;
+    border-radius: 3px;
+    border: 1px solid var(--gold-dim);
+    background: transparent;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .import-btn-header:hover { background: #2e2a1e; }
+
+  /* ── Promotion picker ── */
+  .promo-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .promo-overlay.open { display: flex; }
+  .promo-box {
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 20px 24px;
+    text-align: center;
+    box-shadow: 0 16px 60px rgba(0,0,0,0.7);
+  }
+  .promo-title {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+  .promo-choices {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .promo-choice {
+    width: 64px;
+    height: 64px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .promo-choice:hover { border-color: var(--gold); background: #2e2a1e; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">♟ Puzzle Trainer <span>Interactive Chess Study</span></div>
+  <button class="import-btn-header" onclick="openImport()">↑ Import .txt</button>
+</header>
+
+<div class="app">
+
+  <!-- LEFT: puzzle list -->
+  <div class="left-panel">
+    <div class="panel-title">Puzzles</div>
+    <div class="puzzle-list" id="puzzleList"></div>
+    <button class="add-btn" id="newPuzzleBtn">+ New Puzzle</button>
+    <button class="add-btn" id="bulkDeleteBtn" onclick="toggleBulkDelete()" style="margin-top:6px;border-color:#5a2020;color:#c06060">⬜ Select to Delete</button>
+    <div id="bulkDeleteBar" style="display:none;margin-top:6px;flex-direction:column;gap:6px">
+      <div style="font-size:0.72rem;color:var(--cream-dim);padding:2px 0">Click puzzles to select, then confirm.</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-danger" style="flex:1" onclick="confirmBulkDelete()">🗑 Delete (<span id="selectedCount">0</span>)</button>
+        <button class="btn btn-outline" onclick="cancelBulkDelete()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CENTER: board -->
+  <div class="board-wrap">
+    <div class="mode-bar">
+      <button class="mode-btn active" id="modeSetup" onclick="setMode('setup')">⚙ Setup</button>
+      <button class="mode-btn" id="modeSolve" onclick="setMode('solve')">▶ Solve</button>
+    </div>
+
+    <div class="board-container">
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="status-banner" id="statusBanner">Select a puzzle or create a new one.</div>
+
+    <div class="solve-controls" id="solveControls" style="display:none">
+      <button class="btn btn-outline" onclick="resetSolve()">↺ Restart</button>
+      <button class="btn btn-outline" onclick="undoMove()">← Undo</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: editor -->
+  <div class="right-panel">
+    <button class="panel-title editor-toggle" id="editorToggle" onclick="toggleEditor()">
+      Editor <span id="editorCaret">＋</span>
+    </button>
+
+    <div id="editorPanel" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Puzzle Name</label>
+        <input class="form-input" id="puzzleName" placeholder="e.g. Page 12, Puzzle 3">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Side to Move</label>
+        <div class="side-selector">
+          <button class="side-btn active" id="sideWhite" onclick="setSide('w')"><span class="piece-token piece-w">♚</span> White</button>
+          <button class="side-btn" id="sideBlack" onclick="setSide('b')"><span class="piece-token piece-b">♚</span> Black</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Place Pieces — click a piece, then click board</label>
+        <div class="piece-palette" id="piecePalette"></div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="form-group">
+        <label class="form-label">Solution Moves</label>
+        <div style="font-size:0.72rem;color:var(--cream-dim);margin-bottom:8px">
+          Switch to Solve mode, make moves to record them as the answer key.
+        </div>
+        <div class="solution-list" id="solutionList"></div>
+        <div class="btn-row">
+          <button class="btn btn-outline" id="recordBtn" onclick="startRecording()">● Record moves</button>
+          <button class="btn btn-gold" id="stopRecordBtn" style="display:none" onclick="stopRecording()">■ Stop & Save</button>
+          <button class="btn btn-danger" onclick="clearSolution()">✕ Clear</button>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="savePuzzle()">✓ Save</button>
+        <button class="btn btn-outline" onclick="clearBoard()">Clear Board</button>
+        <button class="btn btn-danger" onclick="deletePuzzle()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Promotion Picker -->
+<div class="promo-overlay" id="promoOverlay">
+  <div class="promo-box">
+    <div class="promo-title">Choose promotion piece</div>
+    <div class="promo-choices" id="promoChoices"></div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Import Puzzles from Text File</div>
+      <button class="modal-close" onclick="closeImport()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="format-hint" style="margin-bottom:14px">
+        <strong style="color:var(--cream)">Expected format (one or more puzzles per file):</strong><br>
+        <code>1. Puzzle Name</code><br>
+        <code>Placement:</code><br>
+        <code>White: Kc2, Qh7, Re1, Bb3, Nd4, Pa2</code><br>
+        <code>Black: Ka1, Qd8, h6, g7</code><br>
+        <code>Answer:</code><br>
+        <code>Qa8# </code> or multi-move: <code>Qd5+ Kf6 Qf7#</code><br><br>
+        Piece letters: <code>K Q R B N</code> (omit = Pawn). Square: <code>a1–h8</code>.<br>
+        Side to move is inferred from the Answer (White moves first by default).
+      </div>
+
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div class="drop-icon">📄</div>
+        <div>Drop your .txt file here, or click to browse</div>
+        <input type="file" id="fileInput" accept=".txt,text/plain" style="display:none">
+      </div>
+
+      <div id="rawPreview" style="display:none">
+        <div class="form-label">File preview</div>
+        <div class="import-preview" id="previewText"></div>
+      </div>
+
+      <div id="importResults" class="import-results"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeImport()">Cancel</button>
+      <button class="btn btn-gold" id="importConfirmBtn" style="display:none" onclick="confirmImport()">✓ Import All Valid Puzzles</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Data ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'chess_puzzles_v2';
+
+function loadPuzzles() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function savePuzzles(ps) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(ps));
+}
+
+let puzzles = loadPuzzles();
+let currentPuzzleIdx = -1;
+
+// Board state: 64-element array, index 0 = a8 (top-left in standard view)
+// piece strings: 'wK','wQ','wR','wB','wN','wP','bK','bQ','bR','bB','bN','bP', '' = empty
+let boardState = Array(64).fill('');
+let sideToMove = 'w'; // 'w' or 'b'
+let solutionMoves = []; // [{from, to, piece, capture, notation}]
+
+// UI state
+let mode = 'setup'; // 'setup' | 'solve' | 'record'
+let selectedPiece = null; // for palette
+let selectedSquare = null; // for board move selection
+let solveStep = 0; // which solution move we're expecting
+let solveMoveHistory = []; // for undo during solve
+let playerSide = 'w'; // the side the human is playing
+let recording = false;
+let recordHistory = []; // board snapshots for undo during recording
+
+// ─── Pieces ────────────────────────────────────────────────────────────────
+// Simple Unicode pieces — color distinguished by background pill
+const PIECES = {
+  wK:'♚', wQ:'♛', wR:'♜', wB:'♝', wN:'♞', wP:'♟',
+  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟',
+};
+const PALETTE_ORDER = ['wK','wQ','wR','wB','wN','wP','bK','bQ','bR','bB','bN','bP'];
+
+// ─── Board helpers ──────────────────────────────────────────────────────────
+function idxToRC(idx) { return { r: Math.floor(idx/8), c: idx%8 }; }
+function rcToIdx(r,c)  { return r*8+c; }
+function idxToAlg(idx) {
+  const {r,c} = idxToRC(idx);
+  return String.fromCharCode(97+c) + (8-r);
+}
+function algToIdx(alg) {
+  const c = alg.charCodeAt(0)-97;
+  const r = 8-parseInt(alg[1]);
+  return rcToIdx(r,c);
+}
+
+// ─── Build board UI ─────────────────────────────────────────────────────────
+function buildBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  for (let i=0; i<64; i++) {
+    const {r,c} = idxToRC(i);
+    const sq = document.createElement('div');
+    sq.className = 'sq ' + ((r+c)%2===0 ? 'light':'dark');
+    sq.id = 'sq'+i;
+    sq.dataset.idx = i;
+
+    // coords
+    if (c===0) { const s=document.createElement('span'); s.className='coord-rank'; s.textContent=8-r; sq.appendChild(s); }
+    if (r===7) { const s=document.createElement('span'); s.className='coord-file'; s.textContent=String.fromCharCode(97+c); sq.appendChild(s); }
+
+    // dot for legal move hint
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    dot.style.display = 'none';
+    sq.appendChild(dot);
+
+    sq.addEventListener('click', () => onSquareClick(i));
+    board.appendChild(sq);
+  }
+  renderBoard();
+}
+
+function renderBoard() {
+  for (let i=0; i<64; i++) {
+    const sq = document.getElementById('sq'+i);
+    if (!sq) continue;
+    const piece = boardState[i];
+    let ps = sq.querySelector('.piece-token');
+    if (!ps) {
+      ps = document.createElement('span');
+      ps.className = 'piece-token';
+      sq.insertBefore(ps, sq.querySelector('.dot'));
+    }
+    if (piece) {
+      ps.textContent = PIECES[piece];
+      ps.className = 'piece-token piece-' + piece[0];
+    } else {
+      ps.textContent = '';
+      ps.className = 'piece-token';
+    }
+    sq.classList.remove('selected','can-move','hint-sq','last-move');
+    sq.querySelector('.dot').style.display='none';
+  }
+}
+
+// ─── Palette ────────────────────────────────────────────────────────────────
+function buildPalette() {
+  const pal = document.getElementById('piecePalette');
+  pal.innerHTML = '';
+  PALETTE_ORDER.forEach(p => {
+    const btn = document.createElement('div');
+    btn.className = 'piece-btn';
+    btn.title = p;
+    const span = document.createElement('span');
+    span.className = 'piece-token piece-' + p[0];
+    span.textContent = PIECES[p];
+    btn.appendChild(span);
+    btn.addEventListener('click', () => selectPalettepiece(p, btn));
+    pal.appendChild(btn);
+  });
+  // eraser
+  const er = document.createElement('div');
+  er.className = 'piece-btn eraser';
+  er.textContent = '✕';
+  er.title = 'Erase';
+  er.addEventListener('click', () => selectPalettepiece('', er));
+  pal.appendChild(er);
+}
+
+function selectPalettepiece(p, btn) {
+  selectedPiece = p;
+  selectedSquare = null;
+  document.querySelectorAll('.piece-btn').forEach(b=>b.classList.remove('selected-piece'));
+  btn.classList.add('selected-piece');
+}
+
+// ─── Square click ───────────────────────────────────────────────────────────
+function onSquareClick(idx) {
+  if (mode === 'setup') {
+    if (selectedPiece !== null) {
+      boardState[idx] = selectedPiece;
+      renderBoard();
+    }
+    return;
+  }
+
+  if (mode === 'solve') {
+    // recording is a sub-mode of solve; pass the flag through
+    handleSolvClick(idx, recording);
+  }
+}
+
+function handleSolvClick(idx, isRecording) {
+  if (selectedSquare === null) {
+    // Select a piece to move
+    const piece = boardState[idx];
+    if (!piece) return;
+    const color = piece[0];
+    if (color !== sideToMove) return;
+    selectedSquare = idx;
+    renderBoard();
+    document.getElementById('sq'+idx).classList.add('selected');
+  } else {
+    if (selectedSquare === idx) {
+      selectedSquare = null;
+      renderBoard();
+      return;
+    }
+    const fromIdx = selectedSquare;
+    selectedSquare = null;
+
+    if (isRecording) {
+      // Just make the move and record it
+      const fromAlg = idxToAlg(fromIdx);
+      const toAlg   = idxToAlg(idx);
+      const piece   = boardState[fromIdx];
+      const capture = boardState[idx];
+      recordHistory.push({board:[...boardState], side: sideToMove, moves:[...solutionMoves]});
+      boardState[idx] = piece;
+      boardState[fromIdx] = '';
+      sideToMove = sideToMove === 'w' ? 'b' : 'w';
+      const notation = piece[1] + (capture?'x':'') + toAlg;
+      solutionMoves.push({from:fromAlg, to:toAlg, piece, capture, notation});
+      renderBoard();
+      highlightLastMove(fromIdx, idx);
+      renderSolutionList(false);
+    } else {
+      // Solve mode: validate against solution
+      checkMove(fromIdx, idx);
+    }
+  }
+}
+
+// ─── Solve validation ───────────────────────────────────────────────────────
+function applyMoveToBoard(mv) {
+  const fromIdx = algToIdx(mv.from);
+  const toIdx   = algToIdx(mv.to);
+  const piece   = boardState[fromIdx];
+  const side    = piece ? piece[0] : mv.piece[0];
+  const destWasEmpty = !boardState[toIdx]; // snapshot BEFORE moving
+  solveMoveHistory.push({from:fromIdx, to:toIdx, piece, capture:boardState[toIdx], step:solveStep,
+    rookFrom: null, rookTo: null, rookPiece: null, epClear: null});
+  const hist = solveMoveHistory[solveMoveHistory.length-1];
+
+  // Move the piece (with promotion)
+  boardState[toIdx]   = mv.promo ? side+mv.promo : piece;
+  boardState[fromIdx] = '';
+
+  // ── Castling: also move the rook ──
+  if (mv.castling || (piece && piece[1]==='K' && Math.abs(fromIdx - toIdx) === 2)) {
+    const rank    = side==='w' ? '1' : '8';
+    const isKing  = toIdx > fromIdx;
+    const rookFrom = algToIdx((isKing ? 'h' : 'a') + rank);
+    const rookTo   = algToIdx((isKing ? 'f' : 'd') + rank);
+    hist.rookFrom = rookFrom; hist.rookTo = rookTo; hist.rookPiece = boardState[rookFrom];
+    boardState[rookTo]   = boardState[rookFrom];
+    boardState[rookFrom] = '';
+  }
+
+  // ── En passant: pawn moves diagonally to an empty square = ep capture ──
+  if (piece && piece[1]==='P' && mv.from[0] !== mv.to[0] && destWasEmpty) {
+    const epIdx = algToIdx(mv.to[0] + mv.from[1]);
+    hist.epClear = { idx: epIdx, piece: boardState[epIdx] };
+    boardState[epIdx] = '';
+  }
+
+  sideToMove = sideToMove === 'w' ? 'b' : 'w';
+  solveStep++;
+}
+
+function autoPlayOpponent(callback) {
+  // After player's move, auto-play all consecutive opponent moves with a delay
+  if (solveStep < solutionMoves.length && sideToMove !== playerSide) {
+    const mv = solutionMoves[solveStep];
+    const fromIdx = algToIdx(mv.from);
+    const toIdx   = algToIdx(mv.to);
+    setTimeout(() => {
+      applyMoveToBoard(mv);
+      renderBoard();
+      highlightLastMove(fromIdx, toIdx);
+      // Recurse in case there are more opponent moves (rare but possible)
+      autoPlayOpponent(callback);
+    }, 420);
+  } else {
+    if (callback) callback();
+  }
+}
+
+function confirmMove(fromIdx, toIdx, chosenPromo) {
+  // Called after promotion choice (or directly for non-pawn moves)
+  const expected = solutionMoves[solveStep];
+
+  // Validate promotion piece matches solution
+  if (expected.promo && chosenPromo !== expected.promo) {
+    flashSquares(fromIdx, toIdx, false);
+    setStatus(`Wrong promotion. The solution promotes to ${expected.promo}.`, 'wrong');
+    renderBoard();
+    return;
+  }
+
+  applyMoveToBoard(expected);
+  renderBoard();
+  highlightLastMove(fromIdx, toIdx);
+  flashSquares(fromIdx, toIdx, true);
+  setStatus('Correct!', 'correct');
+
+  autoPlayOpponent(() => {
+    renderSolutionList(true);
+    let remaining = 0;
+    for (let i = solveStep; i < solutionMoves.length; i++) {
+      if (solutionMoves[i].piece[0] === playerSide) remaining++;
+    }
+    if (solveStep >= solutionMoves.length) {
+      setStatus('🎉 Puzzle Solved! Well done!', 'correct');
+    } else {
+      setStatus(`Correct! ${remaining} move${remaining!==1?'s':''} left.`, 'correct');
+    }
+  });
+  renderSolutionList(true);
+}
+
+function checkMove(fromIdx, toIdx) {
+  if (solutionMoves.length === 0) {
+    setStatus('No solution recorded for this puzzle.', '');
+    return;
+  }
+  if (solveStep >= solutionMoves.length) {
+    setStatus('Puzzle already solved! ✓', 'correct');
+    return;
+  }
+  const expected = solutionMoves[solveStep];
+  const fromAlg  = idxToAlg(fromIdx);
+  const toAlg    = idxToAlg(toIdx);
+
+  if (fromAlg !== expected.from || toAlg !== expected.to) {
+    flashSquares(fromIdx, toIdx, false);
+    setStatus('Incorrect move. Try again.', 'wrong');
+    renderBoard();
+    return;
+  }
+
+  // Correct square — check if this is a pawn promotion
+  const piece    = boardState[fromIdx];
+  const backRank = playerSide === 'w' ? 0 : 7;
+  const toRank   = idxToRC(toIdx).r;
+  if (piece && piece[1] === 'P' && toRank === backRank) {
+    // Show promotion picker — callback will call confirmMove with chosen piece
+    showPromoPicker(playerSide, fromIdx, toIdx);
+  } else {
+    confirmMove(fromIdx, toIdx, null);
+  }
+}
+
+function showPromoPicker(side, fromIdx, toIdx) {
+  const choices = document.getElementById('promoChoices');
+  choices.innerHTML = '';
+  ['Q','R','B','N'].forEach(p => {
+    const btn = document.createElement('div');
+    btn.className = 'promo-choice';
+    const span = document.createElement('span');
+    span.className = 'piece-token piece-' + side;
+    span.textContent = PIECES[side+p];
+    btn.appendChild(span);
+    btn.title = {Q:'Queen',R:'Rook',B:'Bishop',N:'Knight'}[p];
+    btn.onclick = () => {
+      document.getElementById('promoOverlay').classList.remove('open');
+      confirmMove(fromIdx, toIdx, p);
+    };
+    choices.appendChild(btn);
+  });
+  document.getElementById('promoOverlay').classList.add('open');
+}
+
+function highlightLastMove(fromIdx, toIdx) {
+  document.getElementById('sq'+fromIdx)?.classList.add('last-move');
+  document.getElementById('sq'+toIdx)?.classList.add('last-move');
+}
+
+function flashSquares(fromIdx, toIdx, correct) {
+  [fromIdx, toIdx].forEach(idx => {
+    const sq = document.getElementById('sq'+idx);
+    if (!sq) return;
+    const cls = correct ? 'sq-glow-correct' : 'sq-shake-wrong';
+    sq.classList.remove('sq-glow-correct','sq-shake-wrong');
+    void sq.offsetWidth; // reflow to restart animation
+    sq.classList.add(cls);
+    sq.addEventListener('animationend', () => sq.classList.remove(cls), {once:true});
+  });
+}
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('statusBanner');
+  el.textContent = msg;
+  el.className = 'status-banner ' + cls;
+}
+
+// ─── Modes ──────────────────────────────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  recording = false;
+  selectedSquare = null;
+  selectedPiece = null;
+  document.querySelectorAll('.piece-btn').forEach(b=>b.classList.remove('selected-piece'));
+  document.getElementById('modeSetup').classList.toggle('active', m==='setup');
+  document.getElementById('modeSolve').classList.toggle('active', m==='solve');
+  document.getElementById('solveControls').style.display = m==='solve' ? 'flex':'none';
+  // Reset record button appearance
+  const solveBtn = document.getElementById('modeSolve');
+  solveBtn.textContent = '▶ Solve';
+  solveBtn.style.color = '';
+  solveBtn.style.borderColor = '';
+
+  if (m === 'solve') {
+    resetSolve();
+    setStatus(solutionMoves.length ? `Your turn to move. ${solutionMoves.length} move(s) to find.` : 'No solution recorded yet.', solutionMoves.length ? 'info':'');
+  } else {
+    setStatus('Setup mode: place pieces on the board.', '');
+  }
+  renderBoard();
+  renderSolutionList(false);
+}
+
+function resetSolve() {
+  if (currentPuzzleIdx < 0) return;
+  const p = puzzles[currentPuzzleIdx];
+  boardState = [...p.board];
+  sideToMove = p.side;
+  playerSide = p.side; // player always plays the side that moves first
+  solveStep = 0;
+  solveMoveHistory = [];
+  renderBoard();
+  renderSolutionList(false);
+  const playerMoves = solutionMoves.filter(mv => mv.piece[0] === playerSide).length;
+  setStatus(`Your turn. Find ${playerMoves} move${playerMoves!==1?'s':''}.`, 'info');
+}
+
+function undoMove() {
+  if (solveMoveHistory.length === 0) return;
+  // Undo all moves back to the last player move (undo opponent auto-moves too)
+  while (solveMoveHistory.length > 0) {
+    const last = solveMoveHistory[solveMoveHistory.length - 1];
+    solveMoveHistory.pop();
+    boardState[last.from] = last.piece;
+    boardState[last.to]   = last.capture || '';
+    // Undo castling rook
+    if (last.rookFrom !== null) {
+      boardState[last.rookFrom] = last.rookPiece;
+      boardState[last.rookTo]   = '';
+    }
+    // Undo en passant capture
+    if (last.epClear) {
+      boardState[last.epClear.idx] = last.epClear.piece;
+    }
+    sideToMove = sideToMove === 'w' ? 'b' : 'w';
+    solveStep = last.step;
+    if (sideToMove === playerSide) break;
+  }
+  renderBoard();
+  renderSolutionList(false);
+  setStatus('Move undone.', '');
+}
+
+// ─── Recording ──────────────────────────────────────────────────────────────
+function startRecording() {
+  if (currentPuzzleIdx < 0) { alert('Save the puzzle first.'); return; }
+  // Switch to solve mode first (this resets recording=false), then set recording=true
+  setMode('solve');
+  recording = true;
+  recordHistory = [];
+  // Reset board to puzzle start position
+  const p = puzzles[currentPuzzleIdx];
+  boardState = [...p.board];
+  sideToMove = p.side;
+  solutionMoves = [];
+  renderBoard();
+  renderSolutionList(false);
+  // Visual feedback: highlight the record button and show status
+  document.getElementById('modeSolve').textContent = '● REC';
+  document.getElementById('modeSolve').style.color = 'var(--wrong)';
+  document.getElementById('modeSolve').style.borderColor = 'var(--wrong)';
+  document.getElementById('recordBtn').style.display = 'none';
+  document.getElementById('stopRecordBtn').style.display = 'inline-block';
+  setStatus('● Recording — click a piece, then its destination square.', 'info');
+}
+
+function stopRecording() {
+  recording = false;
+  // Restore solve button
+  const solveBtn = document.getElementById('modeSolve');
+  solveBtn.textContent = '▶ Solve';
+  solveBtn.style.color = '';
+  solveBtn.style.borderColor = '';
+  document.getElementById('recordBtn').style.display = 'inline-block';
+  document.getElementById('stopRecordBtn').style.display = 'none';
+  // Auto-save solution to current puzzle
+  if (currentPuzzleIdx >= 0) {
+    puzzles[currentPuzzleIdx].solution = [...solutionMoves];
+    savePuzzles(puzzles);
+    renderPuzzleList();
+    setStatus(`✓ Recorded ${solutionMoves.length} move(s) and saved.`, 'correct');
+  } else {
+    setStatus(`Recording stopped. ${solutionMoves.length} move(s) captured.`, '');
+  }
+  renderSolutionList(false);
+}
+
+function clearSolution() {
+  solutionMoves = [];
+  renderSolutionList(false);
+  setStatus('Solution cleared.', '');
+}
+
+// ─── Solution list render ───────────────────────────────────────────────────
+function renderSolutionList(inSolve) {
+  const el = document.getElementById('solutionList');
+  el.innerHTML = '';
+  if (solutionMoves.length === 0) {
+    el.innerHTML = '<div style="color:var(--cream-dim);font-size:0.72rem;padding:8px">No moves recorded.</div>';
+    return;
+  }
+  solutionMoves.forEach((mv, i) => {
+    const div = document.createElement('div');
+    let cls = 'solution-move';
+    if (inSolve) {
+      if (i < solveStep) cls += ' done';
+      else if (i === solveStep) cls += ' active-step';
+    }
+    div.className = cls;
+    div.innerHTML = `<span class="mv-num">${i+1}.</span><span class="mv-text">${mv.piece[1]}${mv.from}→${mv.to}</span>`;
+    if (!inSolve) {
+      const del = document.createElement('button');
+      del.className='mv-del'; del.textContent='✕';
+      del.onclick=()=>{ solutionMoves.splice(i,1); renderSolutionList(false); };
+      div.appendChild(del);
+    }
+    el.appendChild(div);
+  });
+}
+
+// ─── Puzzle management ──────────────────────────────────────────────────────
+function loadPuzzleIntoEditor(idx) {
+  currentPuzzleIdx = idx;
+  const p = puzzles[idx];
+  boardState  = [...p.board];
+  sideToMove  = p.side;
+  solutionMoves = [...(p.solution||[])];
+  document.getElementById('puzzleName').value = p.name||'';
+  setSide(p.side, true);
+  setMode('solve');
+  renderBoard();
+  renderSolutionList(false);
+  renderPuzzleList();
+  // Always close the editor when loading an existing puzzle
+  if (editorOpen) toggleEditor();
+  setStatus(`${p.solution?.length ? p.solution.length + ' move(s) to find. ' : ''}Your turn!`, 'info');
+}
+
+function savePuzzle() {
+  const name = document.getElementById('puzzleName').value.trim() || 'Untitled';
+  const puzzle = { name, board:[...boardState], side:sideToMove, solution:[...solutionMoves] };
+  if (currentPuzzleIdx < 0) {
+    puzzles.push(puzzle);
+    currentPuzzleIdx = puzzles.length-1;
+  } else {
+    puzzles[currentPuzzleIdx] = puzzle;
+  }
+  savePuzzles(puzzles);
+  renderPuzzleList();
+  setStatus('Puzzle saved ✓', 'correct');
+}
+
+function deletePuzzle() {
+  if (currentPuzzleIdx < 0) return;
+  if (!confirm('Delete this puzzle?')) return;
+  puzzles.splice(currentPuzzleIdx, 1);
+  currentPuzzleIdx = -1;
+  boardState = Array(64).fill('');
+  solutionMoves = [];
+  sideToMove = 'w';
+  savePuzzles(puzzles);
+  renderBoard();
+  renderPuzzleList();
+  setStatus('Puzzle deleted.', '');
+}
+
+function newPuzzle() {
+  currentPuzzleIdx = -1;
+  boardState = Array(64).fill('');
+  solutionMoves = [];
+  sideToMove = 'w';
+  document.getElementById('puzzleName').value = '';
+  setSide('w', true);
+  setMode('setup');
+  renderBoard();
+  renderSolutionList(false);
+  renderPuzzleList();
+  openEditor(); // auto-open editor for new puzzles
+  setStatus('New puzzle: place your pieces.', 'info');
+}
+
+function clearBoard() {
+  boardState = Array(64).fill('');
+  renderBoard();
+}
+
+function setSide(s, silent) {
+  sideToMove = s;
+  document.getElementById('sideWhite').classList.toggle('active', s==='w');
+  document.getElementById('sideBlack').classList.toggle('active', s==='b');
+}
+
+function renderPuzzleList() {
+  const el = document.getElementById('puzzleList');
+  el.innerHTML = '';
+  if (puzzles.length === 0) {
+    el.innerHTML = '<div class="empty-notice">No puzzles yet.<br>Create your first one →</div>';
+    return;
+  }
+  puzzles.forEach((p,i) => {
+    const div = document.createElement('div');
+    const isSelected = selectedForDelete.has(i);
+    div.className = 'puzzle-item' + (!bulkDeleteMode && i===currentPuzzleIdx ? ' active' : '') + (isSelected ? ' bulk-selected' : '');
+    const playerMoveCount = (p.solution||[]).filter(mv => mv.piece && mv.piece[0] === p.side).length;
+    if (bulkDeleteMode) {
+      div.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><span style="font-size:18px">${isSelected?'☑':'☐'}</span><div><div class="pi-name">${p.name||'Untitled'}</div><div class="pi-side">${p.side==='w'?'White':'Black'} to move · ${playerMoveCount} move${playerMoveCount!==1?'s':''}</div></div></div>`;
+      div.onclick = () => {
+        if (selectedForDelete.has(i)) selectedForDelete.delete(i);
+        else selectedForDelete.add(i);
+        document.getElementById('selectedCount').textContent = selectedForDelete.size;
+        renderPuzzleList();
+      };
+    } else {
+      div.innerHTML = `<div><div class="pi-name">${p.name||'Untitled'}</div><div class="pi-side">${p.side==='w'?'White':'Black'} to move · ${playerMoveCount} move${playerMoveCount!==1?'s':''}</div></div><div class="pi-status">${(p.solution||[]).length>0?'📋':''}</div>`;
+      div.onclick = () => loadPuzzleIntoEditor(i);
+    }
+    el.appendChild(div);
+  });
+}
+
+// ─── Bulk delete ─────────────────────────────────────────────────────────────
+let bulkDeleteMode = false;
+let selectedForDelete = new Set();
+
+function toggleBulkDelete() {
+  bulkDeleteMode = !bulkDeleteMode;
+  selectedForDelete.clear();
+  const btn = document.getElementById('bulkDeleteBtn');
+  const bar = document.getElementById('bulkDeleteBar');
+  bar.style.display = bulkDeleteMode ? 'flex' : 'none';
+  btn.textContent = bulkDeleteMode ? '✕ Cancel Selection' : '⬜ Select to Delete';
+  btn.style.color = bulkDeleteMode ? 'var(--cream-dim)' : '#c06060';
+  btn.style.borderColor = bulkDeleteMode ? 'var(--border)' : '#5a2020';
+  document.getElementById('selectedCount').textContent = '0';
+  renderPuzzleList();
+}
+
+function cancelBulkDelete() {
+  bulkDeleteMode = false;
+  selectedForDelete.clear();
+  const btn = document.getElementById('bulkDeleteBtn');
+  btn.textContent = '⬜ Select to Delete';
+  btn.style.color = '#c06060';
+  btn.style.borderColor = '#5a2020';
+  document.getElementById('bulkDeleteBar').style.display = 'none';
+  renderPuzzleList();
+}
+
+function confirmBulkDelete() {
+  if (selectedForDelete.size === 0) return;
+  if (!confirm(`Delete ${selectedForDelete.size} puzzle${selectedForDelete.size>1?'s':''}? This cannot be undone.`)) return;
+  const toDelete = [...selectedForDelete].sort((a,b) => b-a);
+  toDelete.forEach(i => puzzles.splice(i, 1));
+  savePuzzles(puzzles);
+  if (selectedForDelete.has(currentPuzzleIdx)) {
+    currentPuzzleIdx = -1;
+    boardState = Array(64).fill('');
+    solutionMoves = [];
+    renderBoard();
+    setStatus('', '');
+  } else if (currentPuzzleIdx >= 0) {
+    const removedBefore = toDelete.filter(i => i < currentPuzzleIdx).length;
+    currentPuzzleIdx -= removedBefore;
+  }
+  const count = toDelete.length;
+  cancelBulkDelete();
+  setStatus(`Deleted ${count} puzzle${count>1?'s':''}.`, '');
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+buildBoard();
+buildPalette();
+renderPuzzleList();
+document.getElementById('newPuzzleBtn').onclick = newPuzzle;
+
+// Wire up side buttons
+document.getElementById('sideWhite').onclick = () => setSide('w');
+document.getElementById('sideBlack').onclick = () => setSide('b');
+
+setStatus('Create a new puzzle or select one from the list.', '');
+
+// ─── Editor toggle ──────────────────────────────────────────────────────────
+let editorOpen = false;
+function toggleEditor() {
+  editorOpen = !editorOpen;
+  const panel = document.getElementById('editorPanel');
+  const toggle = document.getElementById('editorToggle');
+  const caret = document.getElementById('editorCaret');
+  panel.style.display = editorOpen ? 'block' : 'none';
+  toggle.classList.toggle('open', editorOpen);
+  caret.textContent = editorOpen ? '－' : '＋';
+}
+function openEditor() {
+  if (!editorOpen) toggleEditor();
+}
+
+// ─── Import system ──────────────────────────────────────────────────────────
+
+let parsedImportPuzzles = [];
+
+function openImport() {
+  document.getElementById('importModal').classList.add('open');
+  document.getElementById('importResults').innerHTML = '';
+  document.getElementById('rawPreview').style.display = 'none';
+  document.getElementById('importConfirmBtn').style.display = 'none';
+  parsedImportPuzzles = [];
+}
+function closeImport() {
+  document.getElementById('importModal').classList.remove('open');
+}
+
+// Drag & drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) readFile(file);
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  if (e.target.files[0]) readFile(e.target.files[0]);
+});
+
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => processImportText(e.target.result);
+  reader.readAsText(file);
+}
+
+function processImportText(text) {
+  // Show preview (first 600 chars)
+  document.getElementById('previewText').textContent = text.slice(0,600) + (text.length>600?'\n…':'');
+  document.getElementById('rawPreview').style.display = 'block';
+
+  const puzzleBlocks = splitIntoBlocks(text);
+  parsedImportPuzzles = [];
+  const resultsEl = document.getElementById('importResults');
+  resultsEl.innerHTML = '';
+
+  puzzleBlocks.forEach((block, bi) => {
+    const result = parseBlock(block, bi+1);
+    const div = document.createElement('div');
+    if (result.error) {
+      div.className = 'import-result-item err';
+      div.innerHTML = `<strong>✕ Block ${bi+1}:</strong> ${result.error}` +
+        (result.warnings?.length ? `<br><small style="opacity:0.7">${result.warnings.join('<br>')}</small>` : '');
+    } else {
+      parsedImportPuzzles.push(result.puzzle);
+      div.className = result.warnings.length ? 'import-result-item warn' : 'import-result-item ok';
+      div.innerHTML = `<strong>${result.warnings.length?'⚠':'✓'} "${result.puzzle.name}"</strong> — ${result.puzzle.solution.length} move(s)` +
+        (result.warnings.length ? `<br><small style="opacity:0.7">${result.warnings.join('<br>')}</small>` : '');
+    }
+    resultsEl.appendChild(div);
+  });
+
+  const confirmBtn = document.getElementById('importConfirmBtn');
+  if (parsedImportPuzzles.length > 0) {
+    confirmBtn.style.display = 'inline-block';
+    confirmBtn.textContent = `✓ Import ${parsedImportPuzzles.length} Puzzle${parsedImportPuzzles.length>1?'s':''}`;
+  } else {
+    confirmBtn.style.display = 'none';
+  }
+}
+
+function splitIntoBlocks(text) {
+  // Split on lines that look like "N. Something" (puzzle number headers)
+  const lines = text.split(/\r?\n/);
+  const blocks = [];
+  let current = [];
+  for (const line of lines) {
+    if (/^\s*\d+\.\s+\S/.test(line) && current.length > 0) {
+      blocks.push(current.join('\n'));
+      current = [];
+    }
+    current.push(line);
+  }
+  if (current.some(l => l.trim())) blocks.push(current.join('\n'));
+  return blocks.filter(b => b.trim());
+}
+
+// ── Piece placement parser ──
+// Accepts: Kc2, kc2, Qh7, h6 (pawn), Pa2
+// Returns {color, piece, square} or null
+function parsePlacementToken(token, color) {
+  token = token.trim().replace(/[,;.]/g,'');
+  if (!token) return null;
+  // Match optional piece letter then square
+  const m = token.match(/^([KQRBNPkqrbnp]?)([a-hA-H][1-8])$/);
+  if (!m) return null;
+  const pLetter = m[1] ? m[1].toUpperCase() : 'P';
+  const square  = m[2].toLowerCase();
+  return { color, piece: color[0] + pLetter, square };
+}
+
+function placementsToBoard(placements) {
+  const board = Array(64).fill('');
+  const warnings = [];
+  for (const {piece, square} of placements) {
+    const idx = algToIdx(square);
+    if (idx < 0 || idx > 63) { warnings.push(`Invalid square ${square}`); continue; }
+    if (board[idx]) warnings.push(`Square ${square} overwritten`);
+    board[idx] = piece;
+  }
+  return {board, warnings};
+}
+
+// ── SAN move parser ──
+// Resolves a SAN move (like Qa8#, exd5, Nf3, O-O) against a board state
+// Returns {from, to, piece, capture, notation} or null
+function tokenizeAnswer(text) {
+  // Strip move numbers like "1." "2." "10." "1..." etc.
+  let s = text.replace(/\d+\.+\s*/g, ' ');
+  // Strip e.p. suffix
+  s = s.replace(/\be\.p\./gi, '');
+  return s.trim().split(/\s+/).filter(Boolean);
+}
+
+function resolveMove(token, board, side) {
+  // Strip all annotation suffixes: + # ++ ! ? ep notation markers
+  const clean = token.replace(/[+#!?]/g, '').replace(/\be\.p\b/gi,'').trim();
+  if (!clean) return null;
+
+  // ── Castling ──
+  if (/^(O-O-O|0-0-0)$/i.test(clean)) {
+    const rank = side==='w' ? '1' : '8';
+    return { from:'e'+rank, to:'c'+rank, piece:side+'K', capture:board[algToIdx('c'+rank)]||'', notation:token };
+  }
+  if (/^(O-O|0-0)$/i.test(clean)) {
+    const rank = side==='w' ? '1' : '8';
+    return { from:'e'+rank, to:'g'+rank, piece:side+'K', capture:board[algToIdx('g'+rank)]||'', notation:token };
+  }
+
+  // Normalise: replace × or : capture indicators with x
+  const norm = clean.replace(/[×:]/g, 'x');
+
+  // ── Try FULL form first: piece + from-square + [x] + to-square
+  // e.g. Qb5b7  Qb5xb7  Rh1xh8
+  const fullRe = /^([KQRBNkqrbn])([a-h][1-8])x?([a-h][1-8])([QRBN]?)$/;
+  const fullM  = norm.match(fullRe);
+  if (fullM) {
+    const pl      = fullM[1].toUpperCase();
+    const fromSq  = fullM[2].toLowerCase();
+    const toSq    = fullM[3].toLowerCase();
+    const promo   = fullM[4] ? fullM[4].toUpperCase() : null;
+    const pieceKey = side + pl;
+    const fromIdx  = algToIdx(fromSq);
+    // Verify this piece actually exists at fromSq
+    if (board[fromIdx] !== pieceKey) return null;
+    return { from:fromSq, to:toSq, piece:pieceKey, capture:board[algToIdx(toSq)]||'', notation:token, promo };
+  }
+
+  // ── Short/disambig form: [piece][disambig][x][to][promo]
+  // piece = K Q R B N (uppercase or lowercase); absent = pawn
+  // disambig = file letter OR rank digit (not both required unless triple ambiguity)
+  // e.g. Qa8  Qxa8  Qba8 (file disambig)  Q5a8 (rank disambig)  Rdf8  R1a3
+  const shortRe = /^([KQRBNkqrbn]?)([a-h]?[1-8]?)x?([a-h][1-8])([QRBN=]?)$/;
+  const shortM  = norm.match(shortRe);
+  if (shortM) {
+    const rawPiece = shortM[1];
+    const disambig = shortM[2].toLowerCase();
+    const toSq     = shortM[3].toLowerCase();
+    const promoRaw = shortM[4].replace('=','');
+    const promo    = promoRaw ? promoRaw.toUpperCase() : null;
+    const pl       = rawPiece ? rawPiece.toUpperCase() : 'P';
+    const pieceKey = side + pl;
+    const toIdx    = algToIdx(toSq);
+
+    // Find all matching pieces that sit on the board
+    const candidates = [];
+    for (let i = 0; i < 64; i++) {
+      if (board[i] !== pieceKey) continue;
+      const sq = idxToAlg(i);
+      // Apply disambiguation filter
+      if (disambig.length === 2) {
+        if (sq !== disambig) continue;           // full square disambig
+      } else if (/[a-h]/.test(disambig)) {
+        if (sq[0] !== disambig) continue;        // file disambig
+      } else if (/[1-8]/.test(disambig)) {
+        if (sq[1] !== disambig) continue;        // rank disambig
+      }
+      candidates.push({ from:sq, idx:i });
+    }
+
+    if (candidates.length === 0) return null;
+    // If only one candidate, use it directly (no geometry check needed for puzzle import —
+    // trust the author; wrong moves will just fail validation at solve time)
+    // If multiple candidates, pick the first (disambig should have narrowed it already)
+    const chosen = candidates[0];
+    return { from:chosen.from, to:toSq, piece:pieceKey, capture:board[toIdx]||'', notation:token, promo };
+  }
+
+  // ── Pawn promotion short: e8Q or e8=Q ──
+  const promoRe = /^([a-h][1-8])=?([QRBN])$/i;
+  const promoM  = norm.match(promoRe);
+  if (promoM) {
+    const toSq  = promoM[1].toLowerCase();
+    const promo = promoM[2].toUpperCase();
+    const pieceKey = side + 'P';
+    const toIdx = algToIdx(toSq);
+    const {c:tc} = idxToRC(toIdx);
+    // find pawn on adjacent rank
+    for (let i=0;i<64;i++) {
+      if (board[i] !== pieceKey) continue;
+      const {c:fc} = idxToRC(i);
+      if (fc === tc) return { from:idxToAlg(i), to:toSq, piece:pieceKey, capture:board[toIdx]||'', notation:token, promo };
+    }
+    return null;
+  }
+
+  return null;
+}
+
+function applyMove(board, mv) {
+  const b = [...board];
+  const piece = b[algToIdx(mv.from)];
+  const side  = piece ? piece[0] : mv.piece[0];
+
+  // Move piece (with promotion)
+  b[algToIdx(mv.to)]   = mv.promo ? side+mv.promo : piece;
+  b[algToIdx(mv.from)] = '';
+
+  // Castling: move rook too
+  if (mv.castling || (piece && piece[1]==='K' && Math.abs(algToIdx(mv.from)-algToIdx(mv.to))===2)) {
+    const rank   = side==='w' ? '1' : '8';
+    const isKing = algToIdx(mv.to) > algToIdx(mv.from);
+    b[algToIdx((isKing?'f':'d')+rank)] = b[algToIdx((isKing?'h':'a')+rank)];
+    b[algToIdx((isKing?'h':'a')+rank)] = '';
+  }
+
+  // En passant: remove captured pawn
+  if (piece && piece[1]==='P' && mv.from[0]!==mv.to[0] && !board[algToIdx(mv.to)]) {
+    b[algToIdx(mv.to[0]+mv.from[1])] = '';
+  }
+
+  return b;
+}
+
+// ── Main block parser ──
+function parseBlock(text, blockNum) {
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if (!lines.length) return {error: 'Empty block'};
+
+  // First line: number + name
+  const titleMatch = lines[0].match(/^\d+\.\s+(.+)$/);
+  const name = titleMatch ? titleMatch[1].trim() : lines[0];
+
+  const warnings = [];
+  const placements = [];
+  let side = 'w';
+  const sanMoves = [];
+
+  let section = null; // 'placement-white' | 'placement-black' | 'answer'
+  let whiteSection = false, blackSection = false;
+
+  for (let i=1; i<lines.length; i++) {
+    const l = lines[i];
+    const ll = l.toLowerCase();
+
+    if (/^placement\s*:?\s*$/i.test(l)) { section='placement'; continue; }
+    if (/^answer\s*:/i.test(l)) {
+      section='answer';
+      // grab anything after "Answer:" on the same line
+      const after = l.replace(/^answer\s*:\s*/i,'').trim();
+      if (after) tokenizeAnswer(after).forEach(t => { if (t) sanMoves.push(t); });
+      continue;
+    }
+    if (/^white\s*:/i.test(l)) {
+      section='white';
+      const after = l.replace(/^white\s*:\s*/i,'').trim();
+      if (after) {
+        after.split(/[\s,]+/).forEach(t => {
+          const p = parsePlacementToken(t,'w');
+          if (p) placements.push(p); else if (t) warnings.push(`Can't parse white piece: "${t}"`);
+        });
+      }
+      continue;
+    }
+    if (/^black\s*:/i.test(l)) {
+      section='black';
+      const after = l.replace(/^black\s*:\s*/i,'').trim();
+      if (after) {
+        after.split(/[\s,]+/).forEach(t => {
+          const p = parsePlacementToken(t,'b');
+          if (p) placements.push(p); else if (t) warnings.push(`Can't parse black piece: "${t}"`);
+        });
+      }
+      continue;
+    }
+
+    if (section === 'white') {
+      l.split(/[\s,]+/).forEach(t => {
+        const p = parsePlacementToken(t,'w');
+        if (p) placements.push(p); else if (t) warnings.push(`Can't parse white piece: "${t}"`);
+      });
+    } else if (section === 'black') {
+      l.split(/[\s,]+/).forEach(t => {
+        const p = parsePlacementToken(t,'b');
+        if (p) placements.push(p); else if (t) warnings.push(`Can't parse black piece: "${t}"`);
+      });
+    } else if (section === 'answer') {
+      // Use tokenizeAnswer to strip move numbers before splitting
+      tokenizeAnswer(l).forEach(t => { if (t) sanMoves.push(t); });
+    }
+  }
+
+  if (!placements.length) return {error: 'No piece placements found'};
+
+  const {board, warnings: bw} = placementsToBoard(placements);
+  warnings.push(...bw);
+
+  // Determine side to move: default white, but can be overridden in future
+  // (User can always flip it in editor)
+  let currentSide = side;
+  const solution = [];
+
+  // Resolve moves against the board
+  let workBoard = [...board];
+  for (const token of sanMoves) {
+    const mv = resolveMove(token, workBoard, currentSide);
+    if (!mv) {
+      const clean = token.replace(/[+#!?]/g,'').trim();
+      // Find what pieces of that type exist to help user debug
+      const pl = clean.match(/^[KQRBNkqrbn]/) ? clean[0].toUpperCase() : 'P';
+      const pieceKey = currentSide + pl;
+      const found = workBoard.map((p,i)=>p===pieceKey?idxToAlg(i):null).filter(Boolean);
+      warnings.push(`"${token}" — could not resolve. ${pieceKey} on board: [${found.join(',')||'none'}]`);
+      continue;
+    }
+    solution.push(mv);
+    workBoard = applyMove(workBoard, mv);
+    currentSide = currentSide === 'w' ? 'b' : 'w';
+  }
+
+  if (!solution.length && sanMoves.length > 0) {
+    return {error: `No moves resolved from: "${sanMoves.join(' ')}"`, warnings};
+  }
+
+  return {
+    puzzle: {name, board, side, solution},
+    warnings
+  };
+}
+
+function confirmImport() {
+  if (!parsedImportPuzzles.length) return;
+  puzzles.push(...parsedImportPuzzles);
+  savePuzzles(puzzles);
+  renderPuzzleList();
+  closeImport();
+  // Load the first imported puzzle
+  currentPuzzleIdx = puzzles.length - parsedImportPuzzles.length;
+  loadPuzzleIntoEditor(currentPuzzleIdx);
+  setStatus(`✓ Imported ${parsedImportPuzzles.length} puzzle${parsedImportPuzzles.length>1?'s':''}!`, 'correct');
+}
+
+</script>
+</body>
+</html>
