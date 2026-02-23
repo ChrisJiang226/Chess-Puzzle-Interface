@@ -142,6 +142,166 @@
   }
   .add-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
 
+  /* ── Current puzzle bar (replaces full list on mobile, also shown on desktop) ── */
+  .current-puzzle-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+  .cpb-info { flex: 1; min-width: 0; }
+  .cpb-name { font-size: 0.82rem; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cpb-sub  { font-size: 0.7rem; color: var(--cream-dim); margin-top: 1px; }
+  .cpb-btn  {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--cream);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cpb-btn:active, .cpb-btn:hover { border-color: var(--gold-dim); background: #2e2a1e; }
+  .cpb-btn:disabled { opacity: 0.25; pointer-events: none; }
+
+  /* ── Browse modal ── */
+  .browse-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 300;
+    align-items: flex-end;
+  }
+  .browse-overlay.open { display: flex; }
+  .browse-sheet {
+    width: 100%;
+    max-height: 85vh;
+    background: var(--surface);
+    border-top: 1px solid var(--gold-dim);
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: slideUp 0.22s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .browse-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .browse-title {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    font-size: 1rem;
+    flex: 1;
+  }
+  .browse-close {
+    background: none; border: none; color: var(--cream-dim);
+    font-size: 1.4rem; cursor: pointer; line-height: 1; padding: 0;
+  }
+  .browse-search {
+    margin: 10px 16px;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--cream);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    outline: none;
+    flex-shrink: 0;
+  }
+  .browse-search:focus { border-color: var(--gold-dim); }
+  .browse-count {
+    font-size: 0.7rem; color: var(--cream-dim);
+    padding: 0 16px 6px; flex-shrink: 0;
+  }
+  .browse-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 10px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .browse-list::-webkit-scrollbar { width: 3px; }
+  .browse-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .browse-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .browse-item:active, .browse-item:hover { border-color: var(--gold-dim); background: #2a2720; }
+  .browse-item.active { border-color: var(--gold); background: #2e2a1e; }
+  .browse-item.bulk-selected { border-color: var(--wrong); background: #2a1010; }
+  .browse-idx { font-size: 0.68rem; color: var(--cream-dim); min-width: 28px; text-align: right; }
+  .browse-info { flex: 1; min-width: 0; }
+  .browse-name { font-size: 0.82rem; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .browse-sub  { font-size: 0.7rem; color: var(--cream-dim); margin-top: 1px; }
+  .browse-status { font-size: 0.9rem; flex-shrink: 0; }
+  .browse-tag-chip {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 0.68rem;
+    color: var(--cream-dim);
+    margin-right: 3px;
+    margin-top: 2px;
+  }
+  .browse-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .page-btn {
+    padding: 4px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--cream);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .page-btn:hover, .page-btn.active-page { border-color: var(--gold); color: var(--gold); background: #2e2a1e; }
+  .page-btn:disabled { opacity: 0.3; pointer-events: none; }
+  .page-info { font-size: 0.75rem; color: var(--cream-dim); }
+  .browse-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
   /* ── Board center ── */
   .board-wrap {
     display: flex;
@@ -547,7 +707,7 @@
       gap: 10px;
     }
 
-    /* ── 4: Puzzle list — contained horizontal scroll with prev/next ── */
+    /* ── 4: Puzzle section — compact bar + browse button ── */
     .left-panel {
       order: 4;
       padding: 10px 12px;
@@ -555,55 +715,13 @@
       width: 100vw;
       max-width: 100vw;
       box-sizing: border-box;
-      overflow: hidden;
     }
     .panel-title { font-size: 0.72rem; margin-bottom: 6px; }
-    .puzzle-nav-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      width: 100%;
-      max-width: 100%;
-    }
-    .puzzle-nav-btn {
-      flex-shrink: 0;
-      width: 34px;
-      height: 52px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--cream);
-      font-size: 1.1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .puzzle-nav-btn:active { background: #2e2a1e; border-color: var(--gold-dim); }
-    .puzzle-nav-btn:disabled { opacity: 0.25; pointer-events: none; }
-    .puzzle-list {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: row;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      overflow-y: hidden;
-      max-height: none;
-      gap: 8px;
-      padding-bottom: 4px;
-      -webkit-overflow-scrolling: touch;
-      scroll-snap-type: x mandatory;
-    }
-    .puzzle-list::-webkit-scrollbar { display: none; }
-    .puzzle-item {
-      min-width: 148px;
-      max-width: 148px;
-      flex-shrink: 0;
-      scroll-snap-align: start;
-    }
+    /* Hide the full desktop list on mobile */
+    #puzzleList { display: none !important; }
     .add-btn { margin-top: 8px; width: 100%; }
+    /* Browse sheet takes full height on mobile */
+    .browse-sheet { max-height: 92vh; border-radius: 16px 16px 0 0; }
 
     /* ── 5: Editor panel ── */
     .right-panel {
@@ -824,15 +942,25 @@
   <!-- LEFT: puzzle list -->
   <div class="left-panel">
     <div class="panel-title">Puzzles</div>
-    <div class="puzzle-nav-row">
-      <button class="puzzle-nav-btn" id="puzzleNavPrev" onclick="puzzleNavStep(-1)" title="Previous">‹</button>
-      <div class="puzzle-list" id="puzzleList"></div>
-      <button class="puzzle-nav-btn" id="puzzleNavNext" onclick="puzzleNavStep(1)" title="Next">›</button>
+
+    <!-- Current puzzle bar with prev/next -->
+    <div class="current-puzzle-bar">
+      <button class="cpb-btn" id="cpbPrev" onclick="puzzleNavStep(-1)" title="Previous">‹</button>
+      <div class="cpb-info" id="cpbInfo">
+        <div class="cpb-name" id="cpbName">No puzzle selected</div>
+        <div class="cpb-sub"  id="cpbSub">—</div>
+      </div>
+      <button class="cpb-btn" id="cpbNext" onclick="puzzleNavStep(1)" title="Next">›</button>
     </div>
+
+    <!-- Desktop: full scrollable list -->
+    <div class="puzzle-list" id="puzzleList" style="margin-top:10px"></div>
+
     <button class="add-btn" id="newPuzzleBtn">+ New Puzzle</button>
+    <button class="add-btn" onclick="openBrowse()" style="margin-top:6px;border-color:var(--gold-dim);color:var(--gold)">☰ Browse All Puzzles</button>
     <button class="add-btn" id="bulkDeleteBtn" onclick="toggleBulkDelete()" style="margin-top:6px;border-color:#5a2020;color:#c06060">⬜ Select to Delete</button>
     <div id="bulkDeleteBar" style="display:none;margin-top:6px;flex-direction:column;gap:6px">
-      <div style="font-size:0.72rem;color:var(--cream-dim);padding:2px 0">Tap puzzles to select, then confirm.</div>
+      <div style="font-size:0.72rem;color:var(--cream-dim);padding:2px 0">Click puzzles to select, then confirm.</div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-danger" style="flex:1" onclick="confirmBulkDelete()">🗑 Delete (<span id="selectedCount">0</span>)</button>
         <button class="btn btn-outline" onclick="cancelBulkDelete()">Cancel</button>
@@ -869,6 +997,10 @@
       <div class="form-group">
         <label class="form-label">Puzzle Name</label>
         <input class="form-input" id="puzzleName" placeholder="e.g. Page 12, Puzzle 3">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags <span style="color:var(--cream-dim);font-weight:400">(comma separated, e.g. tactic, pin, endgame)</span></label>
+        <input class="form-input" id="puzzleTagsInput" placeholder="e.g. pin, fork, endgame">
       </div>
 
       <div class="form-group">
@@ -919,6 +1051,30 @@
   </div>
 </div>
 
+<!-- Browse Modal -->
+<div class="browse-overlay" id="browseOverlay" onclick="if(event.target===this)closeBrowse()">
+  <div class="browse-sheet">
+    <div class="browse-header">
+      <div class="browse-title">All Puzzles</div>
+      <button class="browse-close" onclick="closeBrowse()">×</button>
+    </div>
+    <div style="padding:8px 16px 0;display:flex;gap:8px;flex-shrink:0">
+      <input class="browse-search" id="browseSearch" placeholder="Search…" oninput="browseGoPage(1)" autocomplete="off" style="flex:1;margin:0">
+      <select class="browse-search" id="browseTagFilter" onchange="browseGoPage(1)" style="margin:0;flex-shrink:0;max-width:130px">
+        <option value="">All tags</option>
+      </select>
+
+    </div>
+    <div class="browse-count" id="browseCount" style="padding:6px 16px 2px"></div>
+    <div class="browse-list" id="browseList"></div>
+    <div class="browse-pagination" id="browsePagination"></div>
+    <div class="browse-footer">
+      <button class="add-btn" style="margin-top:0;flex:1" onclick="newPuzzle();closeBrowse()">+ New Puzzle</button>
+      <button class="add-btn" id="browseBulkBtn" onclick="openBulkFromBrowse()" style="margin-top:0;border-color:#5a2020;color:#c06060">⬜ Select</button>
+    </div>
+  </div>
+</div>
+
 <!-- Import Modal -->
 <div class="modal-overlay" id="importModal">
   <div class="modal">
@@ -933,6 +1089,7 @@
         <code>Placement:</code><br>
         <code>White: Kc2, Qh7, Re1, Bb3, Nd4, Pa2</code><br>
         <code>Black: Ka1, Qd8, h6, g7</code><br>
+        <code>Tags:</code> pin, fork<br>
         <code>Answer:</code><br>
         <code>Qa8# </code> or multi-move: <code>Qd5+ Kf6 Qf7#</code><br><br>
         Piece letters: <code>K Q R B N</code> (omit = Pawn). Square: <code>a1–h8</code>.<br>
@@ -1230,6 +1387,7 @@ function confirmMove(fromIdx, toIdx, chosenPromo) {
     }
     if (solveStep >= solutionMoves.length) {
       setStatus('🎉 Puzzle Solved! Well done!', 'correct');
+
     } else {
       setStatus(`Correct! ${remaining} move${remaining!==1?'s':''} left.`, 'correct');
     }
@@ -1471,6 +1629,8 @@ function loadPuzzleIntoEditor(idx) {
   sideToMove  = p.side;
   solutionMoves = [...(p.solution||[])];
   document.getElementById('puzzleName').value = p.name||'';
+  const tagsInput = document.getElementById('puzzleTagsInput');
+  if (tagsInput) tagsInput.value = (p.tags||[]).join(', ');
   setSide(p.side, true);
   setMode('solve');
   renderBoard();
@@ -1478,6 +1638,7 @@ function loadPuzzleIntoEditor(idx) {
   renderPuzzleList();
   // Always close the editor when loading an existing puzzle
   if (editorOpen) toggleEditor();
+  updateCurrentPuzzleBar();
   const pm = (p.solution||[]).filter(mv=>mv.piece&&mv.piece[0]===p.side).length;
   setStatus(`${pm ? pm + ' move' + (pm!==1?'s':'') + ' to find.' : 'No solution recorded.'}`, 'info');
   setMobilePuzzleName(p.name);
@@ -1485,7 +1646,10 @@ function loadPuzzleIntoEditor(idx) {
 
 function savePuzzle() {
   const name = document.getElementById('puzzleName').value.trim() || 'Untitled';
-  const puzzle = { name, board:[...boardState], side:sideToMove, solution:[...solutionMoves] };
+  const existingTags = (currentPuzzleIdx >= 0 && puzzles[currentPuzzleIdx]) ? (puzzles[currentPuzzleIdx].tags||[]) : [];
+  const tagsInput = document.getElementById('puzzleTagsInput');
+  const tags = tagsInput ? tagsInput.value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean) : existingTags;
+  const puzzle = { name, board:[...boardState], side:sideToMove, solution:[...solutionMoves], tags };
   if (currentPuzzleIdx < 0) {
     puzzles.push(puzzle);
     currentPuzzleIdx = puzzles.length-1;
@@ -1543,12 +1707,25 @@ function puzzleNavStep(dir) {
   if (next !== currentPuzzleIdx) loadPuzzleIntoEditor(next);
 }
 
-function updateNavBtns() {
-  const prev = document.getElementById('puzzleNavPrev');
-  const next = document.getElementById('puzzleNavNext');
-  if (!prev || !next) return;
-  prev.disabled = currentPuzzleIdx <= 0;
-  next.disabled = currentPuzzleIdx >= puzzles.length - 1 || currentPuzzleIdx < 0;
+function updateCurrentPuzzleBar() {
+  const nameEl = document.getElementById('cpbName');
+  const subEl  = document.getElementById('cpbSub');
+  const prev   = document.getElementById('cpbPrev');
+  const next   = document.getElementById('cpbNext');
+  if (!nameEl) return;
+  if (currentPuzzleIdx < 0 || !puzzles[currentPuzzleIdx]) {
+    nameEl.textContent = 'No puzzle selected';
+    subEl.textContent  = puzzles.length ? `${puzzles.length} puzzle${puzzles.length!==1?'s':''}` : '—';
+    if (prev) prev.disabled = true;
+    if (next) next.disabled = true;
+  } else {
+    const p = puzzles[currentPuzzleIdx];
+    const pm = (p.solution||[]).filter(mv=>mv.piece&&mv.piece[0]===p.side).length;
+    nameEl.textContent = p.name || 'Untitled';
+    subEl.textContent  = `${currentPuzzleIdx+1}/${puzzles.length} · ${p.side==='w'?'White':'Black'} · ${pm} move${pm!==1?'s':''}`;
+    if (prev) prev.disabled = currentPuzzleIdx <= 0;
+    if (next) next.disabled = currentPuzzleIdx >= puzzles.length - 1;
+  }
 }
 
 function scrollActivePuzzleIntoView() {
@@ -1559,12 +1736,164 @@ function scrollActivePuzzleIntoView() {
   if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
 }
 
+// ── Browse modal ──
+const PAGE_SIZE = 20;
+let browsePage = 1;
+
+function openBrowse() {
+  document.getElementById('browseSearch').value = '';
+  populateBrowseTagFilter();
+  browsePage = 1;
+  renderBrowseList();
+  document.getElementById('browseOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('browseSearch').focus(), 150);
+}
+
+function closeBrowse() {
+  document.getElementById('browseOverlay').classList.remove('open');
+  if (bulkDeleteMode) cancelBulkDelete();
+}
+
+function browseGoPage(p) {
+  browsePage = p;
+  renderBrowseList();
+}
+
+function populateBrowseTagFilter() {
+  const sel = document.getElementById('browseTagFilter');
+  const current = sel.value;
+  // Collect all unique tags
+  const allTags = new Set();
+  puzzles.forEach(p => (p.tags||[]).forEach(t => allTags.add(t)));
+  sel.innerHTML = '<option value="">All tags</option>';
+  [...allTags].sort().forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    if (t === current) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+function getBrowseFiltered() {
+  const query      = (document.getElementById('browseSearch').value||'').toLowerCase().trim();
+  const tagFilter  = document.getElementById('browseTagFilter').value;
+  return puzzles.map((p,i) => ({p,i})).filter(({p}) => {
+    if (query && !(p.name||'').toLowerCase().includes(query)) return false;
+    if (tagFilter && !(p.tags||[]).includes(tagFilter)) return false;
+    return true;
+  });
+}
+
+function renderBrowseList() {
+  const filtered = getBrowseFiltered();
+  const total    = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  browsePage = Math.min(browsePage, totalPages);
+  const slice  = filtered.slice((browsePage-1)*PAGE_SIZE, browsePage*PAGE_SIZE);
+
+  const el      = document.getElementById('browseList');
+  const countEl = document.getElementById('browseCount');
+  const pagEl   = document.getElementById('browsePagination');
+  el.innerHTML  = '';
+
+  const q = document.getElementById('browseSearch').value.trim();
+  const tf = document.getElementById('browseTagFilter').value;
+  const filtering = q || tf;
+  countEl.textContent = filtering
+    ? `${total} of ${puzzles.length} puzzle${puzzles.length!==1?'s':''}`
+    : `${puzzles.length} puzzle${puzzles.length!==1?'s':''}`;
+
+  if (total === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--cream-dim);font-size:0.82rem">No puzzles match.</div>';
+    pagEl.innerHTML = '';
+    return;
+  }
+
+  slice.forEach(({p,i}) => {
+    const div = document.createElement('div');
+    const isSelected = selectedForDelete.has(i);
+    div.className = 'browse-item' + (i===currentPuzzleIdx?' active':'') + (isSelected?' bulk-selected':'');
+    const pm   = (p.solution||[]).filter(mv=>mv.piece&&mv.piece[0]===p.side).length;
+    const tags = (p.tags||[]).map(t=>`<span class="browse-tag-chip">${t}</span>`).join('');
+    if (bulkDeleteMode) {
+      div.innerHTML = `<span style="font-size:18px;flex-shrink:0">${isSelected?'☑':'☐'}</span>
+        <div class="browse-info">
+          <div class="browse-name">${p.name||'Untitled'}</div>
+          <div class="browse-sub">${p.side==='w'?'White':'Black'} · ${pm} move${pm!==1?'s':''}${tags?'<br>'+tags:''}</div>
+        </div>`;
+      div.onclick = () => {
+        if (selectedForDelete.has(i)) selectedForDelete.delete(i); else selectedForDelete.add(i);
+        document.getElementById('selectedCount').textContent = selectedForDelete.size;
+        renderBrowseList();
+      };
+    } else {
+      div.innerHTML = `<span class="browse-idx">#${i+1}</span>
+        <div class="browse-info">
+          <div class="browse-name">${p.name||'Untitled'}</div>
+          <div class="browse-sub">${p.side==='w'?'White':'Black'} · ${pm} move${pm!==1?'s':''}${tags?'<br>'+tags:''}</div>
+        </div>`;
+      div.onclick = () => { loadPuzzleIntoEditor(i); closeBrowse(); };
+    }
+    el.appendChild(div);
+  });
+
+  // Pagination controls
+  pagEl.innerHTML = '';
+  if (totalPages > 1) {
+    const prev = document.createElement('button');
+    prev.className = 'page-btn'; prev.textContent = '‹ Prev';
+    prev.disabled = browsePage <= 1;
+    prev.onclick = () => browseGoPage(browsePage - 1);
+    pagEl.appendChild(prev);
+
+    // Page number buttons (show up to 5 around current)
+    const start = Math.max(1, browsePage - 2);
+    const end   = Math.min(totalPages, start + 4);
+    for (let pg = start; pg <= end; pg++) {
+      const btn = document.createElement('button');
+      btn.className = 'page-btn' + (pg === browsePage ? ' active-page' : '');
+      btn.textContent = pg;
+      btn.onclick = ((p) => () => browseGoPage(p))(pg);
+      pagEl.appendChild(btn);
+    }
+
+    const next = document.createElement('button');
+    next.className = 'page-btn'; next.textContent = 'Next ›';
+    next.disabled = browsePage >= totalPages;
+    next.onclick = () => browseGoPage(browsePage + 1);
+    pagEl.appendChild(next);
+
+    const info = document.createElement('span');
+    info.className = 'page-info';
+    info.textContent = `${browsePage}/${totalPages}`;
+    pagEl.appendChild(info);
+  }
+
+  setTimeout(() => {
+    const active = el.querySelector('.browse-item.active');
+    if (active) active.scrollIntoView({ block: 'nearest' });
+  }, 50);
+}
+
+function openBulkFromBrowse() {
+  bulkDeleteMode = !bulkDeleteMode;
+  selectedForDelete.clear();
+  const btn = document.getElementById('bulkDeleteBtn');
+  if (btn && bulkDeleteMode) { btn.textContent='✕ Cancel'; btn.style.color='var(--cream-dim)'; btn.style.borderColor='var(--border)'; }
+  else if (btn) { btn.textContent='⬜ Select to Delete'; btn.style.color='#c06060'; btn.style.borderColor='#5a2020'; }
+  document.getElementById('selectedCount').textContent = '0';
+  const bbtn = document.getElementById('browseBulkBtn');
+  if (bbtn) bbtn.textContent = bulkDeleteMode ? '✕ Cancel' : '⬜ Select';
+  renderBrowseList();
+  renderPuzzleList();
+}
+
 function renderPuzzleList() {
   const el = document.getElementById('puzzleList');
   el.innerHTML = '';
   if (puzzles.length === 0) {
     el.innerHTML = '<div class="empty-notice">No puzzles yet.<br>Create your first one →</div>';
-    updateNavBtns();
+    updateCurrentPuzzleBar();
     return;
   }
   puzzles.forEach((p,i) => {
@@ -1585,8 +1914,13 @@ function renderPuzzleList() {
     }
     el.appendChild(div);
   });
-  updateNavBtns();
+  updateCurrentPuzzleBar();
   setTimeout(scrollActivePuzzleIntoView, 50);
+  // Also refresh browse if it's open
+  if (document.getElementById('browseOverlay')?.classList.contains('open')) {
+    populateBrowseTagFilter();
+    renderBrowseList();
+  }
 }
 
 // ─── Bulk delete ─────────────────────────────────────────────────────────────
@@ -1604,6 +1938,7 @@ function toggleBulkDelete() {
   btn.style.borderColor = bulkDeleteMode ? 'var(--border)' : '#5a2020';
   document.getElementById('selectedCount').textContent = '0';
   renderPuzzleList();
+  if (document.getElementById('browseOverlay')?.classList.contains('open')) renderBrowseList();
 }
 function cancelBulkDelete() {
   bulkDeleteMode = false; selectedForDelete.clear();
@@ -1911,8 +2246,9 @@ function parseBlock(text, blockNum) {
   const placements = [];
   let side = 'w';
   const sanMoves = [];
+  const parsedTags = [];
 
-  let section = null; // 'placement-white' | 'placement-black' | 'answer'
+  let section = null; // 'placement-white' | 'placement-black' | 'answer' | 'tags'
   let whiteSection = false, blackSection = false;
 
   for (let i=1; i<lines.length; i++) {
@@ -1920,6 +2256,12 @@ function parseBlock(text, blockNum) {
     const ll = l.toLowerCase();
 
     if (/^placement\s*:?\s*$/i.test(l)) { section='placement'; continue; }
+    if (/^tags\s*:/i.test(l)) {
+      section='tags';
+      const after = l.replace(/^tags\s*:\s*/i,'').trim();
+      if (after) after.split(/[,]+/).map(t=>t.trim().toLowerCase()).filter(Boolean).forEach(t=>parsedTags.push(t));
+      continue;
+    }
     if (/^answer\s*:/i.test(l)) {
       section='answer';
       // grab anything after "Answer:" on the same line
@@ -1961,8 +2303,9 @@ function parseBlock(text, blockNum) {
         if (p) placements.push(p); else if (t) warnings.push(`Can't parse black piece: "${t}"`);
       });
     } else if (section === 'answer') {
-      // Use tokenizeAnswer to strip move numbers before splitting
       tokenizeAnswer(l).forEach(t => { if (t) sanMoves.push(t); });
+    } else if (section === 'tags') {
+      l.split(/[,]+/).map(t=>t.trim().toLowerCase()).filter(Boolean).forEach(t=>parsedTags.push(t));
     }
   }
 
@@ -1999,7 +2342,7 @@ function parseBlock(text, blockNum) {
   }
 
   return {
-    puzzle: {name, board, side, solution},
+    puzzle: {name, board, side, solution, tags: parsedTags},
     warnings
   };
 }
